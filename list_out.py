@@ -13,8 +13,6 @@ webhooks_url=sys.argv[6]
 q1="[?tags.{}==\`{}\`].name".format(key,val)
 q2="[].name"
 
-main_output=('Azure machines list\n\n')
-main_output+=(f"VM Name \t Resource Group \t Age \n")
 def auth():
     authoutput=sp.getstatusoutput("az login --service-principal -u {} -p {} --tenant {}".format(username,password,tenantid))
     return authoutput
@@ -48,7 +46,8 @@ def time_format(create_timestamp):
     right_format=current_time-(datetime.strptime(create_timestamp[:19],'%Y-%m-%dT%H:%M:%S'))
     return right_format
 
-
+main_output=['Azure machines list\n\n']
+main_output.append(f"VM Name \t Resource Group \t Age \n")
 if(authout[0]==0):
     print("Authentication is successed")
     time.sleep(30)
@@ -61,13 +60,17 @@ if(authout[0]==0):
         time=time_format(tm)
         print(f"Resoure Group of {filter_array[i]} is :{rg}")
         print(f"Time created : {time}")
-        main_output+=(f'{filter_array[i]} : \t {rg} : \t {time}\n\n')
+        main_output.append(f'{filter_array[i]} : \t {rg} : \t {time}\n\n')
     print(main_output)
-    resp = requests.post(
-                webhooks_url,
-                data={
-                    'content':"```\n"+main_output+"\n```",
-                },
-            )    
-else:
-    print("Authentication failed",authout[1])
+    message="```\n"
+    for i in main_output:
+        if len(message) >1000:
+            message=message+"\n```"
+            resp = requests.post(
+                        webhooks_url,
+                        data={
+                            'content':message,
+                        },
+                    )   
+            message="```\n"
+        message=message+  i
